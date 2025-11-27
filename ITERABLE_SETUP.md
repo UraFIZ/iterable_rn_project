@@ -2,6 +2,19 @@
 
 This document outlines the steps completed for migrating from OneSignal to Iterable push notifications, and what you need to do to complete the setup.
 
+## 🔴 Critical Configuration Note
+
+**Package Name vs Integration Name Mismatch:**
+- Your Android app package ID: `com.iterable_rn_project`
+- Your Iterable integration name: `com_iterable_staging`
+
+By default, the Iterable SDK looks for a push integration with the same name as your app's package ID. Since yours differs, you may need to uncomment this line in `useIterablePushNotification.ts`:
+```typescript
+config.pushIntegrationName = 'com_iterable_staging';
+```
+
+If your Android push notifications don't work, this is likely the cause.
+
 ## ✅ What Has Been Completed
 
 ### 1. Package Installation
@@ -27,6 +40,8 @@ This document outlines the steps completed for migrating from OneSignal to Itera
 - **AndroidManifest.xml**:
   - Added `POST_NOTIFICATIONS` permission (required for Android 13+)
   - Added intent filters for notification handling
+- **MainApplication.kt**:
+  - Added `IterableApi.setContext(this)` initialization (required by official guide for SDK 1.1.0+)
 
 ### 4. React Native Code
 - **Created**: `hooks/useIterablePushNotification/useIterablePushNotification.ts`

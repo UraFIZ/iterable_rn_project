@@ -61,7 +61,10 @@ const useIterablePushNotification = (webviewRef: any, apiKey: string) => {
   useEffect(() => {
     // Initialize Iterable SDK
     const config = new IterableConfig();
-    config.pushIntegrationName = 'iterable-react-native-sdk';
+    // Set to match your Iterable mobile app integration name (Android: com_iterable_staging)
+    // By default, SDK uses your app's package/bundle ID
+    // Uncomment the line below if your integration name differs from package ID
+    // config.pushIntegrationName = 'com_iterable_staging';
     config.autoPushRegistration = true;
 
     Iterable.initialize(apiKey, config);
