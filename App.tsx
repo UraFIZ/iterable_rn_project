@@ -7,12 +7,13 @@ import React from 'react';
 import { StatusBar, StyleSheet, Text, useColorScheme, View, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { WebView } from 'react-native-webview';
-import usePushNotification from './hooks/usePushNotifiactions/usePushNotification';
+import useIterablePushNotification from './hooks/useIterablePushNotification/useIterablePushNotification';
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
   const webviewRef = React.useRef(null);
-  usePushNotification(webviewRef, 'your-onesignal-app-id');
+  // Replace 'your-iterable-api-key' with your actual Iterable API key
+  useIterablePushNotification(webviewRef, 'your-iterable-api-key');
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
