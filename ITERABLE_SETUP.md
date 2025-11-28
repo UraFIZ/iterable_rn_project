@@ -95,29 +95,31 @@ pod install
 cd ..
 ```
 
-### Step 2: Add Firebase Configuration Files
+### Step 2: Add Firebase Configuration (Android ONLY)
 
-#### For Android:
+**⚠️ IMPORTANT: Firebase is ONLY required for Android, NOT for iOS**
+
+#### Why Firebase is Needed:
+- **Android**: Iterable uses Firebase Cloud Messaging (FCM) for Android push notifications. This is mandatory.
+- **iOS**: Uses Apple Push Notification service (APNs) directly. Firebase is NOT needed.
+
+#### For Android (REQUIRED):
 1. Go to your Firebase Console (https://console.firebase.google.com/)
-2. Select your project (or create one if you haven't)
-3. Go to Project Settings > Your apps > Android app
-4. Download the `google-services.json` file
-5. Place it here: `android/app/google-services.json`
+2. Create a new project or select an existing one
+3. Add an Android app to your Firebase project
+4. **Package name MUST be**: `com.iterable_rn_project` (must match your Android app)
+5. Download the `google-services.json` file
+6. Place it at: `android/app/google-services.json`
 
-**Important**: The package name in Firebase must match: `com.iterable_rn_project`
+**Critical**: Without this file, your Android app will not build. The build will fail with:
+```
+Error: File google-services.json is missing
+```
 
-#### For iOS:
-1. In the same Firebase Console
-2. Go to Project Settings > Your apps > iOS app
-3. Download the `GoogleService-Info.plist` file
-4. Place it here: `ios/iterable_rn_project/GoogleService-Info.plist`
-5. **Also add this file to your Xcode project**:
-   - Open `ios/iterable_rn_project.xcworkspace` in Xcode
-   - Drag `GoogleService-Info.plist` into the project navigator
-   - Make sure "Copy items if needed" is checked
-   - Select your target
-
-**Important**: The bundle ID in Firebase must match: `com.iterable.org` (as mentioned in your setup)
+#### For iOS (NOT NEEDED):
+- ❌ Do NOT add an iOS app to Firebase
+- ❌ Do NOT download GoogleService-Info.plist
+- ✅ iOS uses APNs directly - only needs APNs certificate in Iterable dashboard (see Step 4 below)
 
 ### Step 3: Configure Iterable in Your Code
 
