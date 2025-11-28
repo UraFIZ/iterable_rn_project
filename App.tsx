@@ -12,8 +12,11 @@ import useIterablePushNotification from './hooks/useIterablePushNotification/use
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
   const webviewRef = React.useRef(null);
-  // Replace 'your-iterable-api-key' with your actual Iterable API key
+
+  // Replace 'your-iterable-api-key' with your actual Iterable Mobile API key
+  // Optional third parameter: user email (can also be set later via Iterable.setEmail())
   useIterablePushNotification(webviewRef, 'your-iterable-api-key');
+  // With user email: useIterablePushNotification(webviewRef, 'your-api-key', 'user@example.com');
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,

@@ -15,6 +15,40 @@ config.pushIntegrationName = 'com_iterable_staging';
 
 If your Android push notifications don't work, this is likely the cause.
 
+## ⚠️ Important Differences from OneSignal
+
+**Iterable SDK Architecture:**
+Iterable's React Native SDK works fundamentally differently from OneSignal:
+
+1. **No Foreground Notification Event** ❌
+   - OneSignal: `addEventListener('foregroundWillDisplay')` fires when notification is received
+   - Iterable: **NO JavaScript callback for foreground notifications**
+   - The native iOS/Android SDK handles display automatically
+   - Your Angular app **will NOT receive** the `notificationShownInFG` event anymore
+   - If you need foreground detection, you must implement native code (see below)
+
+2. **Notification Clicks Use Config Callbacks** ✅
+   - OneSignal: Runtime event listeners (`addEventListener('click')`)
+   - Iterable: Configuration-time callbacks (`config.urlHandler` and `config.customActionHandler`)
+   - The `notificationClicked` CustomEvent **WILL still work** for your Angular app
+
+3. **No Built-in Permission Methods** 📋
+   - OneSignal: `requestPermission()` and `getPermissionAsync()` methods
+   - Iterable: Permissions handled at native level (iOS AppDelegate, Android Manifest)
+   - Permissions are already configured in the native code
+
+4. **User Identity Required** 🔑
+   - You MUST call `Iterable.setEmail('user@example.com')` or `Iterable.setUserId('user123')`
+   - Without this, the device won't register for push notifications
+   - Can be set in the hook (third parameter) or from your webview
+
+**Migration Impact on Your Angular App:**
+
+| Event | OneSignal | Iterable | Still Works? |
+|-------|-----------|----------|--------------|
+| `notificationShownInFG` | ✅ Fired | ❌ Not fired | **NO** - Remove this listener |
+| `notificationClicked` | ✅ Fired | ✅ Fired | **YES** - Keep this listener |
+
 ## ✅ What Has Been Completed
 
 ### 1. Package Installation
@@ -45,10 +79,11 @@ If your Android push notifications don't work, this is likely the cause.
 
 ### 4. React Native Code
 - **Created**: `hooks/useIterablePushNotification/useIterablePushNotification.ts`
-  - Similar structure to your existing OneSignal hook
-  - Handles foreground notifications
-  - Handles notification clicks
-  - Injects CustomEvents into webview (same as before)
+  - Uses correct Iterable SDK API (config callbacks, not event listeners)
+  - Handles notification clicks via `urlHandler` and `customActionHandler`
+  - **Does NOT handle foreground notifications** (Iterable limitation)
+  - Injects `notificationClicked` CustomEvent into webview
+  - Includes `getLastPushPayload()` to handle cold start from notification
 - **Updated**: `App.tsx` to use the new Iterable hook instead of OneSignal
 
 ## 🔧 What You Need to Do
@@ -152,37 +187,69 @@ npm run android
 
 **Note**: Push notifications only work on physical devices, not on simulators/emulators.
 
-## 🔄 How It Works (Same as OneSignal)
+## 🔄 How It Works (DIFFERENT from OneSignal)
 
-The implementation maintains the same CustomEvent structure you had with OneSignal:
+**⚠️ IMPORTANT: This is NOT the same as OneSignal!**
 
-1. **Foreground Notifications**: When a notification is received while the app is open, it dispatches:
-   ```javascript
-   window.dispatchEvent(new CustomEvent('notificationShownInFG', { detail: {...} }))
-   ```
+1. **Foreground Notifications**: ❌ **NOT SUPPORTED**
+   - Iterable's React Native SDK **does not provide** a JavaScript callback for foreground notifications
+   - The `notificationShownInFG` CustomEvent **will NOT fire**
+   - Your Angular app **must remove** this event listener
+   - Notifications are displayed by the native OS automatically
+   - If you need foreground detection, you must implement native code
 
-2. **Notification Clicks**: When a user taps on a notification, it dispatches:
+2. **Notification Clicks**: ✅ **SUPPORTED** - When a user taps on a notification, it dispatches:
    ```javascript
    window.dispatchEvent(new CustomEvent('notificationClicked', { detail: {...} }))
    ```
 
-Your Angular app can continue listening to these events the same way:
+Your Angular app **must update** its event listeners:
+
 ```javascript
+// ❌ REMOVE THIS - It will never fire with Iterable
 window.addEventListener('notificationShownInFG', (event) => {
   console.log('Foreground notification:', event.detail);
 });
 
+// ✅ KEEP THIS - It still works with Iterable
 window.addEventListener('notificationClicked', (event) => {
   console.log('Notification clicked:', event.detail);
 });
 ```
 
-## 📝 Key Differences from OneSignal
+### If You Need Foreground Notification Detection
 
-1. **Initialization**: Uses `Iterable.initialize()` instead of `OneSignal.initialize()`
-2. **API Key**: Uses Iterable API Key instead of OneSignal App ID
-3. **User Identity**: Requires setting email or user ID via `Iterable.setEmail()` or `Iterable.setUserId()`
-4. **Push Integration Name**: Uses `com_iterable_staging` for Android in Iterable dashboard
+If your Angular app requires knowing when a notification arrives in foreground, you have two options:
+
+**Option 1: Use a complementary library** (recommended for React Native)
+- Install `@notifee/react-native` or `react-native-push-notification` alongside Iterable
+- These libraries can detect foreground notifications and emit events to JavaScript
+
+**Option 2: Implement native code** (iOS example in `AppDelegate.swift`):
+```swift
+// Already implemented in your AppDelegate.swift
+func userNotificationCenter(
+  _ center: UNUserNotificationCenter,
+  willPresent notification: UNNotification,
+  withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+) {
+  // Add custom code here to emit event to React Native using RCTEventEmitter
+  // This requires creating a native module bridge
+  completionHandler([.banner, .sound, .badge])
+}
+```
+
+## 📝 SDK Method Mapping Reference
+
+| Feature | OneSignal | Iterable |
+|---------|-----------|----------|
+| **Initialization** | `OneSignal.initialize(appID)` | `Iterable.initialize(apiKey, config)` |
+| **Foreground Event** | `addEventListener('foregroundWillDisplay')` | ❌ **Not available** |
+| **Click Event** | `addEventListener('click')` | `config.urlHandler` + `config.customActionHandler` |
+| **Request Permission** | `requestPermission()` | ❌ Handle in native code |
+| **Check Permission** | `getPermissionAsync()` | ❌ Handle in native code |
+| **Set User** | Auto from device | **Required**: `setEmail()` or `setUserId()` |
+| **Integration Name** | App ID | `pushIntegrationName` config |
 
 ## 🐛 Troubleshooting
 
